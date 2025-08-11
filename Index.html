@@ -8,8 +8,9 @@
     .cell { display:flex; align-items:center; justify-content:center; border:1px solid #444; font-size:14px; cursor:pointer; user-select:none; color:white;}
     .item0{ grid-column:1/span 3; background-color:green!important; color:white!important;}
     .selected{ background:#cef!important; border-color:#69f!important;}
-    .results-wrapper{display:flex; justify-content:center; gap:10px; margin-top:10px;}
+    .results-wrapper{display:flex; justify-content:center; gap:10px; margin-top:10px; flex-wrap: wrap;}
     .result-box{width:60px; height:45px; display:flex; align-items:center; justify-content:center; border:2px solid #444; font-size:16px; background:#eee;}
+    .result-red { background:#fdd; color:red; font-weight:bold; border-color:red; }
     .live-numbers{margin-top:20px; text-align:center; font-size:18px; font-weight:bold;}
   </style>
 </head>
@@ -19,10 +20,18 @@
   <div class="live-numbers" id="liveNumbers">Loading live numbers...</div>
 
   <script>
-    const colorMap = ['green','red','black','red','black','red','black','red','black','red',
-                      'black','black','red','black','red','black','red','black','red','red',
-                      'black','red','black','red','black','red','black','red','black','red',
-                      'black','red','black','red','black','red','black'];
+    const colorMap = [
+      'green','red','black','red','black','red','black','red','black','red',
+      'black','black','red','black','red','black','red','black','red','red',
+      'black','red','black','red','black','red','black','red','black','red',
+      'black','red','black','red','black','red','black'
+    ];
+
+    // Your custom order list
+    const orderList = [
+      0,26,3,35,12,28,7,29,18,22,9,31,14,20,1,33,16,24,5,10,23,8,30,11,
+      36,13,27,6,34,17,25,2,21,4,19,15,32
+    ];
 
     const gridEl = document.getElementById('buttonGrid');
     const resultsEl = document.getElementById('results');
@@ -42,22 +51,46 @@
       return max;
     }
 
+    function getAboveBelow(num) {
+      const idx = orderList.indexOf(num);
+      if (idx === -1) return { above: null, below: null };
+
+      const aboveIdx = (idx - 1 + orderList.length) % orderList.length;
+      const belowIdx = (idx + 1) % orderList.length;
+
+      return { above: orderList[aboveIdx], below: orderList[belowIdx] };
+    }
+
     function updateResults() {
       resultsEl.innerHTML = '';
 
       if (selectedNumber !== null) {
         const maxInRow = getMaxInSameRow(selectedNumber);
-        const calc1 = selectedNumber - 7;
-        const calc2 = maxInRow - 9;
+        const calc1 = selectedNumber - 7; // old 3rd value
+        const calc2 = maxInRow - 9;       // old 4th value (first number)
+        const calc3 = (calc1 + calc2 - selectedNumber)*-1-2; // your earlier logic
 
-        const values = [selectedNumber, maxInRow, calc1, calc2];
+        // Above/below values from orderList
+        const { above, below } = getAboveBelow(selectedNumber);
+
+        // Show calc2, calc3, above, below
+        const values = [calc2, calc3, above, below];
 
         values.forEach(val => {
           const box = document.createElement('div');
           box.className = 'result-box';
-          box.textContent = val;
+          box.textContent = val !== null ? val : '-';
           resultsEl.appendChild(box);
         });
+
+        // New final number = first number + (last number) / 2)
+        if (calc2 !== null && below !== null) {
+          const finalNo = calc2 + below/ 2;
+          const redBox = document.createElement('div');
+          redBox.className = 'result-box result-red';
+          redBox.textContent = finalNo;
+          resultsEl.appendChild(redBox);
+        }
       }
     }
 
